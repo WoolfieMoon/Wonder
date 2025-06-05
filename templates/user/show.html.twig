@@ -1,6 +1,5 @@
 {% extends "base.html.twig" %}
 
-
 {% block title %}{{ user.fullname }}{% endblock %}
 
 {% block body %}
@@ -10,33 +9,68 @@
     <div class="d-flex flex-row-nowrap">
       <img src="{{ asset(user.picture) }}" class="mr-10 profile-picture">
       <ul>
-      <li class="mb-10">
-        <strong class="mr-10">Prénom:</strong>{{user.firstname }}
-      </li>
-      <li class="mb-10">
-        <strong class="mr-10">Nom:</strong>{{user.lastname }}
-      </li>
-      <li class="mb-10">
-        <strong class="mr-10">Email:</strong>{{user.email }}</li>
-      </li>
+        <li class="mb-10">
+          <strong class="mr-10">Prénom:</strong>{{ user.firstname }}
+        </li>
+        <li class="mb-10">
+          <strong class="mr-10">Nom:</strong>{{ user.lastname }}
+        </li>
+        <li class="mb-10">
+          <strong class="mr-10">Email:</strong>{{ user.email }}
+        </li>
       </ul>
     </div>
+
+    {# BOUTON SUIVRE / NE PLUS SUIVRE #}
+    {% if app.user and app.user.id != user.id %}
+      {% if user in app.user.followedUsers %}
+        <a href="{{ path('user_unfollow', {id: user.id}) }}" class="btn btn-danger mt-20">Ne plus suivre</a>
+      {% else %}
+        <a href="{{ path('user_follow', {id: user.id}) }}" class="btn btn-primary mt-20">Suivre</a>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <div class="block mb-20">
+    <h3 class="pb-30">Relations</h3>
+    <ul>
+      <li><strong>Suis :</strong> {{ user.followedUsers|length }} personne(s)</li>
+      <li><strong>Suivi par :</strong> {{ user.followers|length }} personne(s)</li>
+    </ul>
+
+    <h4 class="pt-10">Liste des personnes suivies :</h4>
+    <ul>
+      {% for u in user.followedUsers %}
+        <li><a href="{{ path('user', {id: u.id}) }}">{{ u.firstname }} {{ u.lastname }}</a></li>
+      {% else %}
+        <li>Aucun suivi.</li>
+      {% endfor %}
+    </ul>
+
+    <h4 class="pt-10">Liste des abonnés :</h4>
+    <ul>
+      {% for u in user.followers %}
+        <li><a href="{{ path('user', {id: u.id}) }}">{{ u.firstname }} {{ u.lastname }}</a></li>
+      {% else %}
+        <li>Aucun abonné.</li>
+      {% endfor %}
+    </ul>
   </div>
 
   <div class="block mb-20">
     <h3 class="pb-30">Questions</h3>
     <ul>
       {% for question in user.questions %}
-      <li>{{ question.title }}</li>
+        <li>{{ question.title }}</li>
       {% endfor %}
     </ul>
   </div>
 
-    <div class="block">
+  <div class="block">
     <h3 class="pb-30">Réponses</h3>
     <ul>
       {% for comment in user.comments %}
-      <li>{{ comment.content | slice(0, 50) }} ...</li>
+        <li>{{ comment.content | slice(0, 50) }} ...</li>
       {% endfor %}
     </ul>
   </div>

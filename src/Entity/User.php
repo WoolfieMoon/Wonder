@@ -10,7 +10,6 @@ use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
-
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
@@ -18,6 +17,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
+
+    #[ORM\ManyToMany(targetEntity: self::class, inversedBy: 'followers')]
+    #[ORM\JoinTable(name: 'user_follows')]
+    private Collection $followedUsers;
+
+    #[ORM\ManyToMany(targetEntity: self::class, mappedBy: 'followedUsers')]
+    private Collection $followers;
 
     #[ORM\Column(length: 180, unique: true)]
     #[Assert\Email(message: 'Veuillez rentrer un email valide.')]
@@ -60,6 +66,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function __construct()
     {
+        $this->followedUsers = new ArrayCollection();
+        $this->followers = new ArrayCollection();
         $this->questions = new ArrayCollection();
         $this->comments = new ArrayCollection();
         $this->votes = new ArrayCollection();
@@ -78,42 +86,27 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setEmail(string $email): static
     {
         $this->email = $email;
-
         return $this;
     }
 
-    /**
-     * A visual identifier that represents this user.
-     *
-     * @see UserInterface
-     */
     public function getUserIdentifier(): string
     {
         return (string) $this->email;
     }
 
-    /**
-     * @see UserInterface
-     */
     public function getRoles(): array
     {
         $roles = $this->roles;
-        // guarantee every user at least has ROLE_USER
         $roles[] = 'ROLE_USER';
-
         return array_unique($roles);
     }
 
     public function setRoles(array $roles): static
     {
         $this->roles = $roles;
-
         return $this;
     }
 
-    /**
-     * @see PasswordAuthenticatedUserInterface
-     */
     public function getPassword(): string
     {
         return $this->password;
@@ -122,7 +115,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPassword(string $password): static
     {
         $this->password = $password;
-
         return $this;
     }
 
@@ -134,16 +126,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setNewPassword(string $newPassword): static
     {
         $this->newPassword = $newPassword;
-
         return $this;
     }
 
-    /**
-     * @see UserInterface
-     */
     public function eraseCredentials(): void
     {
-        // If you store any temporary, sensitive data on the user, clear it here
         // $this->plainPassword = null;
     }
 
@@ -155,7 +142,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setFirstname(string $firstname): static
     {
         $this->firstname = $firstname;
-
         return $this;
     }
 
@@ -167,7 +153,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setLastname(string $lastname): static
     {
         $this->lastname = $lastname;
-
         return $this;
     }
 
@@ -197,7 +182,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function removeQuestion(Question $question): static
     {
         if ($this->questions->removeElement($question)) {
-            // set the owning side to null (unless already changed)
             if ($question->getAuthor() === $this) {
                 $question->setAuthor(null);
             }
@@ -227,7 +211,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function removeComment(Comment $comment): static
     {
         if ($this->comments->removeElement($comment)) {
-            // set the owning side to null (unless already changed)
             if ($comment->getAuthor() === $this) {
                 $comment->setAuthor(null);
             }
@@ -244,7 +227,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPicture(string $picture): static
     {
         $this->picture = $picture;
-
         return $this;
     }
 
@@ -269,12 +251,57 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function removeVote(Vote $vote): static
     {
         if ($this->votes->removeElement($vote)) {
-            // set the owning side to null (unless already changed)
             if ($vote->getAuthor() === $this) {
                 $vote->setAuthor(null);
             }
         }
 
+        return $this;
+    }
+
+    // ------------------ FOLLOW SYSTEM ------------------
+
+    public function getFollowedUsers(): Collection
+    {
+        return $this->followedUsers;
+    }
+
+    public function addFollowedUser(self $user): static
+    {
+        if (!$this->followedUsers->contains($user)) {
+            $this->followedUsers->add($user);
+            $user->addFollower($this);
+        }
+
+        return $this;
+    }
+
+    public function removeFollowedUser(self $user): static
+    {
+        if ($this->followedUsers->removeElement($user)) {
+            $user->removeFollower($this);
+        }
+
+        return $this;
+    }
+
+    public function getFollowers(): Collection
+    {
+        return $this->followers;
+    }
+
+    public function addFollower(self $user): static
+    {
+        if (!$this->followers->contains($user)) {
+            $this->followers->add($user);
+        }
+
+        return $this;
+    }
+
+    public function removeFollower(self $user): static
+    {
+        $this->followers->removeElement($user);
         return $this;
     }
 }

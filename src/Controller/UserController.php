@@ -39,6 +39,7 @@ class UserController extends AbstractController
         $userForm->remove('password');
         $userForm->add('newPassword', PasswordType::class, ['label' => 'Nouveau mot de passe', 'required' => false]);
         $userForm->handleRequest($request);
+
         if ($userForm->isSubmitted() && $userForm->isValid()) {
             $newPassword = $user->getNewPassword();
             if ($newPassword) {
@@ -56,5 +57,35 @@ class UserController extends AbstractController
         return $this->render('user/index.html.twig', [
             'form' => $userForm->createView()
         ]);
+    }
+
+    #[Route('/follow/{id}', name: 'user_follow')]
+    public function follow(User $user, EntityManagerInterface $em): Response
+    {
+        $currentUser = $this->getUser();
+
+        if (!$currentUser instanceof User || $currentUser === $user) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $currentUser->addFollowedUser($user);
+        $em->flush();
+
+        return $this->redirectToRoute('user', ['id' => $user->getId()]);
+    }
+
+    #[Route('/unfollow/{id}', name: 'user_unfollow')]
+    public function unfollow(User $user, EntityManagerInterface $em): Response
+    {
+        $currentUser = $this->getUser();
+
+        if (!$currentUser instanceof User || $currentUser === $user) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $currentUser->removeFollowedUser($user);
+        $em->flush();
+
+        return $this->redirectToRoute('user', ['id' => $user->getId()]);
     }
 }
